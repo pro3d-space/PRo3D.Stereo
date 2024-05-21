@@ -104,9 +104,9 @@ module Viewer =
         Aardvark.Init()
 
         let dbg = Aardvark.Rendering.GL.DebugConfig.Normal
-        let windowInterop = StereoExperimental.stereo dbg
-        //use app = new OpenGlApplication(dbg, windowInterop, None, false)
-        use app = new OpenGlApplication()
+        let windowInterop = StereoExperimental.stereo dbg 
+        use app = new OpenGlApplication(dbg, windowInterop, None, false)
+        //use app = new OpenGlApplication()
         let win = app.CreateGameWindow({ WindowConfig.Default with samples = 8; width = 1760; height= 1080 })
         let runtime = win.Runtime
 
@@ -125,7 +125,7 @@ module Viewer =
                 let h = PatchHierarchy.load serializer.Pickle serializer.UnPickle (OpcPaths.OpcPaths basePath)
                 let t = PatchLod.toRoseTree h.tree
                 let sg = 
-                    Sg.patchLod win.FramebufferSignature runner basePath DefaultMetrics.mars2 false false ViewerModality.XYZ PatchLod.CoordinatesMapping.Local true t
+                    Sg.patchLod win.FramebufferSignature runner basePath DefaultMetrics.tunnel false true ViewerModality.XYZ PatchLod.CoordinatesMapping.Local true t
 
                 sg, getEstimateBoundingBox h
             )
@@ -140,10 +140,10 @@ module Viewer =
 
 
         let bb = overallBoundingBox
-        let initialView = CameraView.lookAt bb.Max bb.Center bb.Center.Normalized
+        let initialView = CameraView.lookAt (V3d.III * 10.0) V3d.OOO bb.Center.Normalized
         let cameraView = 
             AVal.integrate initialView win.Time [
-                DefaultCameraController.controlOrbitAround win.Mouse (AVal.constant bb.Center)
+                DefaultCameraController.controlOrbitAround win.Mouse (AVal.constant V3d.OOO)
                 DefaultCameraController.controlZoom win.Mouse
                 DefaultCameraController.controllScroll win.Mouse win.Time
             ]
@@ -167,7 +167,7 @@ module Viewer =
                     // use this to focus always on orbit (screen = orbit center)
                     let convergence = cameraView.Location.Length
 
-                    let center = Frustum.perspective camFov 0.001 100.0 (float windowSize.X / float windowSize.Y) |> Frustum.projTrafo
+                    let center = Frustum.perspective camFov 0.1 10000.0 (float windowSize.X / float windowSize.Y) |> Frustum.projTrafo
                     let p = center.Forward
                     let pl = 
                         M44d(
@@ -266,13 +266,16 @@ module Viewer =
                 |> Sg.viewTrafo (AVal.constant Trafo3d.Identity)
                 |> Sg.projTrafo (AVal.constant Trafo3d.Identity)
    
-
+        let fallbackFrustum = Frustum.perspective 80.0 0.01 10000.0  1.0
         let sg = 
             hierarchies
             |> List.map fst
             |> Sg.ofList 
             |> Sg.uniform "ViewTrafo" (cameraView |> AVal.map (CameraView.viewTrafo >> Array.create 2))
             |> Sg.uniform "ProjTrafo" projTrafos
+            |> Sg.trafo' (Trafo3d.Translation(-bb.Center))
+            |> Sg.viewTrafo (cameraView |> AVal.map CameraView.viewTrafo)
+            |> Sg.projTrafo (AVal.constant (Frustum.projTrafo fallbackFrustum))
             |> Sg.effect [
                         Shader.stableTrafo |> toEffect
                         DefaultSurfaces.constantColor C4f.White |> toEffect

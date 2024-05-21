@@ -2,7 +2,7 @@
   "profiles": {
     "PRo3D.Stereo": {
       "commandName": "Project",
-      "commandLineArgs": "I:\\OPC\\OpcEarth-m"
+      "commandLineArgs": "\"C:\\Users\\Schorsch\\Downloads\\VictoriaCrater (1)\\VictoriaCrater\\HiRISE_VictoriaCrater_SuperResolution\""
     }
   }
 }
