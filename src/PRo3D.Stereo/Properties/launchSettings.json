@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PRo3D.Stereo": {
+      "commandName": "Project",
+      "commandLineArgs": "I:\\OPC\\OpcEarth-m"
+    }
+  }
+}
